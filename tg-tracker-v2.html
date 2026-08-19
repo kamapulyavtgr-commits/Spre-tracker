@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>СПРЭД</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root{
+    --bg:#0A0D12;
+    --panel:#12161D;
+    --panel-2:#181D26;
+    --border:#232B36;
+    --border-soft:#1B222B;
+    --text:#E9EDF2;
+    --text-dim:#7C8798;
+    --text-faint:#4E5867;
+    --mint:#3ED6A6;
+    --mint-dim:#1F5A48;
+    --gold:#E8B75F;
+    --gold-dim:#5C4A26;
+    --red:#E2596B;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:
+      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(62,214,166,0.06), transparent),
+      radial-gradient(ellipse 700px 400px at 100% 0%, rgba(232,183,95,0.05), transparent),
+      var(--bg);
+    color:var(--text);
+    font-family:'Inter', sans-serif;
+    min-height:100vh;
+    padding:28px 20px 80px;
+  }
+  .wrap{max-width:980px; margin:0 auto;}
+
+  /* ---- Ticker header ---- */
+  .ticker{
+    display:flex; align-items:center; gap:14px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:12px; color:var(--text-faint);
+    letter-spacing:0.04em;
+    padding-bottom:18px; margin-bottom:22px;
+    border-bottom:1px solid var(--border-soft);
+    overflow-x:auto; white-space:nowrap;
+  }
+  .ticker .pair{color:var(--text-dim); font-weight:600;}
+  .ticker .dot{width:5px; height:5px; border-radius:50%; background:var(--mint); box-shadow:0 0 8px var(--mint); flex-shrink:0;}
+  .ticker .val{color:var(--text);}
+  .ticker .up{color:var(--mint);}
+
+  /* ---- Hero ---- */
+  .hero{
+    display:flex; justify-content:space-between; align-items:flex-end;
+    flex-wrap:wrap; gap:24px;
+    margin-bottom:30px;
+  }
+  .hero h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:15px; font-weight:600;
+    color:var(--text-dim);
+    text-transform:uppercase; letter-spacing:0.14em;
+    margin-bottom:10px;
+  }
+  .hero .big{
+    font-family:'Space Grotesk', sans-serif;
+    font-size:56px; font-weight:700; line-height:1;
+    color:var(--text);
+    letter-spacing:-0.02em;
+  }
+  .hero .big span{color:var(--mint); font-size:28px; font-weight:600; margin-left:10px;}
+  .hero .sub{font-family:'JetBrains Mono', monospace; font-size:13px; color:var(--text-dim); margin-top:8px;}
+  .month-pick{
+    font-family:'JetBrains Mono', monospace;
+    background:var(--panel); border:1px solid var(--border);
+    color:var(--text); font-size:13px; padding:9px 12px; border-radius:8px;
+    cursor:pointer;
+  }
+
+  /* ---- People strip ---- */
+  .people{
+    display:grid; grid-template-columns:repeat(4,1fr); gap:10px;
+    margin-bottom:34px;
+  }
+  .person-card{
+    background:var(--panel); border:1px solid var(--border-soft);
+    border-radius:10px; padding:14px 16px;
+    position:relative; overflow:hidden;
+  }
+  .person-card.rauль::before{
+    content:''; position:absolute; top:0; left:0; right:0; height:2px;
+    background:linear-gradient(90deg, var(--gold), transparent);
+  }
+  .person-card:not(.rauль)::before{
+    content:''; position:absolute; top:0; left:0; right:0; height:2px;
+    background:linear-gradient(90deg, var(--mint), transparent);
+  }
+  .person-card .name{font-size:12px; color:var(--text-dim); margin-bottom:6px;}
+  .person-card .amount{font-family:'JetBrains Mono', monospace; font-size:18px; font-weight:600; color:var(--text);}
+  .person-card .tag{font-size:10px; color:var(--gold); margin-top:4px; text-transform:uppercase; letter-spacing:0.06em;}
+
+  /* ---- Section ---- */
+  .section-head{
+    display:flex; justify-content:space-between; align-items:center;
+    margin-bottom:14px;
+  }
+  .section-head h2{
+    font-family:'Space Grotesk', sans-serif; font-size:13px; font-weight:600;
+    color:var(--text-dim); text-transform:uppercase; letter-spacing:0.12em;
+  }
+  .btn{
+    font-family:'Inter', sans-serif; font-size:13px; font-weight:500;
+    background:var(--mint); color:#06110D; border:none;
+    padding:9px 16px; border-radius:8px; cursor:pointer;
+    transition:opacity .15s;
+  }
+  .btn:hover{opacity:0.85;}
+  .btn.ghost{
+    background:transparent; color:var(--text-dim); border:1px solid var(--border);
+  }
+  .btn.ghost:hover{color:var(--text); border-color:var(--text-dim);}
+  .btn.small{padding:6px 11px; font-size:12px;}
+
+  /* ---- Panel / Form ---- */
+  .panel{
+    background:var(--panel); border:1px solid var(--border-soft);
+    border-radius:14px; padding:20px; margin-bottom:34px;
+  }
+  .form-grid{
+    display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-bottom:14px;
+  }
+  .field label{display:block; font-size:11px; color:var(--text-faint); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.05em;}
+  .field input{
+    width:100%; background:var(--panel-2); border:1px solid var(--border);
+    color:var(--text); font-family:'JetBrains Mono', monospace; font-size:14px;
+    padding:9px 10px; border-radius:7px; outline:none;
+  }
+  .field input:focus{border-color:var(--mint);}
+  .kickback-row{display:flex; align-items:center; gap:10px; margin-top:2px;}
+  .kickback-row label{font-size:12px; color:var(--text-dim);}
+  .kickback-row input{width:70px; background:var(--panel-2); border:1px solid var(--border); color:var(--gold); font-family:'JetBrains Mono', monospace; font-size:13px; padding:6px 8px; border-radius:6px;}
+
+  /* ---- Preview strip ---- */
+  .preview{
+    display:flex; gap:22px; flex-wrap:wrap; margin-top:16px; padding-top:16px;
+    border-top:1px solid var(--border-soft);
+    font-family:'JetBrains Mono', monospace; font-size:13px;
+  }
+  .preview .k{color:var(--text-faint); font-size:11px; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:3px;}
+  .preview .v{color:var(--text); font-weight:600;}
+  .preview .v.mint{color:var(--mint);}
+  .preview .v.gold{color:var(--gold);}
+
+  /* ---- Deals log ---- */
+  .deal-row{
+    display:grid; grid-template-columns:90px 1fr 1fr 110px 90px 30px;
+    align-items:center; gap:14px;
+    padding:14px 16px; border-bottom:1px solid var(--border-soft);
+    font-family:'JetBrains Mono', monospace; font-size:13px;
+  }
+  .deal-row:last-child{border-bottom:none;}
+  .deal-row .date{color:var(--text-faint); font-size:12px;}
+  .deal-row .rate{color:var(--text-dim); font-size:12px;}
+  .deal-row .rate b{color:var(--text); font-weight:600;}
+  .deal-row .spread-bar{height:5px; background:var(--panel-2); border-radius:3px; overflow:hidden; margin-top:5px;}
+  .deal-row .spread-fill{height:100%; background:linear-gradient(90deg, var(--mint-dim), var(--mint));}
+  .deal-row .profit{color:var(--mint); font-weight:700; text-align:right;}
+  .deal-row .pct{color:var(--gold); text-align:right; font-size:12px;}
+  .deal-row .del{color:var(--text-faint); cursor:pointer; text-align:center; font-size:16px; background:none; border:none;}
+  .deal-row .del:hover{color:var(--red);}
+  .deals-head{
+    display:grid; grid-template-columns:90px 1fr 1fr 110px 90px 30px; gap:14px;
+    padding:0 16px 10px; font-size:10px; color:var(--text-faint);
+    text-transform:uppercase; letter-spacing:0.06em;
+  }
+  .empty{padding:40px 20px; text-align:center; color:var(--text-faint); font-size:13px;}
+
+  .filter-row{display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end;}
+  .filter-row select{
+    width:100%; background:var(--panel-2); border:1px solid var(--border);
+    color:var(--text); font-family:'JetBrains Mono', monospace; font-size:13px;
+    padding:9px 10px; border-radius:7px; outline:none;
+  }
+
+  /* ---- Monthly stat cards ---- */
+  .stats-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:34px;}
+  .stat-card{background:var(--panel); border:1px solid var(--border-soft); border-radius:12px; padding:18px;}
+  .stat-card .k{font-size:11px; color:var(--text-faint); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:8px;}
+  .stat-card .v{font-family:'Space Grotesk', sans-serif; font-size:24px; font-weight:700; color:var(--text);}
+  .stat-card .v.mint{color:var(--mint);}
+
+  footer{text-align:center; color:var(--text-faint); font-size:11px; margin-top:40px; font-family:'JetBrains Mono', monospace;}
+
+  .env-banner{
+    background:var(--gold-dim); color:var(--gold); border:1px solid var(--gold);
+    border-radius:8px; padding:10px 14px; font-size:12px; margin-bottom:18px;
+    display:none;
+  }
+  .sync-dot{
+    display:inline-block; width:7px; height:7px; border-radius:50%;
+    background:var(--text-faint); margin-left:8px; vertical-align:middle;
+    transition:background .2s;
+  }
+  .sync-dot.ok{background:var(--mint); box-shadow:0 0 6px var(--mint);}
+  .sync-dot.err{background:var(--red); box-shadow:0 0 6px var(--red);}
+
+  /* ---- Login screen ---- */
+  .login-screen{
+    position:fixed; inset:0; background:var(--bg); z-index:100;
+    display:flex; align-items:center; justify-content:center; flex-direction:column;
+    padding:20px;
+  }
+  .login-box{
+    background:var(--panel); border:1px solid var(--border-soft); border-radius:16px;
+    padding:32px 28px; max-width:340px; width:100%; text-align:center;
+  }
+  .login-box .lock{font-size:32px; margin-bottom:14px;}
+  .login-box h2{font-family:'Space Grotesk', sans-serif; font-size:16px; margin-bottom:6px; color:var(--text);}
+  .login-box p{font-size:12px; color:var(--text-dim); margin-bottom:20px;}
+  .login-box input{
+    width:100%; background:var(--panel-2); border:1px solid var(--border);
+    color:var(--text); font-family:'JetBrains Mono', monospace; font-size:18px;
+    text-align:center; letter-spacing:0.15em;
+    padding:12px; border-radius:8px; outline:none; margin-bottom:14px;
+  }
+  .login-box input:focus{border-color:var(--mint);}
+  .login-box .err-msg{color:var(--red); font-size:12px; margin-bottom:10px; min-height:16px;}
+  .login-box .btn{width:100%;}
+
+  @media(max-width:720px){
+    .form-grid{grid-template-columns:repeat(2,1fr);}
+    .people{grid-template-columns:repeat(2,1fr);}
+    .stats-grid{grid-template-columns:1fr;}
+
+    .deals-head{display:none;}
+    .deal-row{
+      display:grid;
+      grid-template-columns:1fr 1fr auto;
+      grid-template-areas:
+        "date date close"
+        "ratein rateout rateout"
+        "profit profit pct";
+      column-gap:10px; row-gap:8px;
+      padding:14px 16px;
+    }
+    .deal-row .date{grid-area:date; font-size:13px;}
+    .deal-row .rate-in{grid-area:ratein;}
+    .deal-row .rate-out{grid-area:rateout;}
+    .deal-row .profit{grid-area:profit; text-align:left; font-size:15px;}
+    .deal-row .pct{grid-area:pct; text-align:right; align-self:end;}
+    .deal-row .del{grid-area:close; font-size:18px; align-self:start; justify-self:end;}
+  }
+</style>
+</head>
+<body>
+
+<div class="login-screen" id="loginScreen">
+  <div class="login-box">
+    <div class="lock">🔒</div>
+    <h2>Код доступа</h2>
+    <p>Введите код, чтобы открыть трекер сделок</p>
+    <input type="password" id="codeInput" placeholder="••••" autocomplete="off" inputmode="numeric">
+    <div class="err-msg" id="codeErr"></div>
+    <button class="btn" id="codeSubmit">Войти</button>
+  </div>
+</div>
+
+<div class="wrap" id="mainApp" style="display:none;">
+
+  <div class="env-banner" id="envBanner">⚠️ Открыто вне Telegram — данные не будут сохраняться между сессиями. Откройте через бота для облачного сохранения.</div>
+
+  <div class="ticker" id="tickerBar">
+    <div class="dot"></div>
+    <span class="pair">USDT/RUB</span>
+    <span id="tickerContent">загрузка…</span>
+    <span id="roleBadge" style="margin-left:auto; color:var(--gold);"></span>
+  </div>
+
+  <div class="hero">
+    <div>
+      <h1 id="monthLabel">Профит за месяц</h1>
+      <div class="big" id="heroTotal">0 ₽<span id="heroPct">0.00%</span></div>
+      <div class="sub" id="heroSub">0 сделок</div>
+    </div>
+    <select class="month-pick" id="monthPicker"></select>
+  </div>
+
+  <div class="people" id="peopleStrip"></div>
+
+  <div id="addDealPanel">
+  <div class="section-head">
+    <h2>Новая сделка</h2>
+  </div>
+  <div class="panel">
+    <div class="form-grid">
+      <div class="field"><label>Дата</label><input type="date" id="fDate"></div>
+      <div class="field"><label>Сумма входа, ₽</label><input type="number" id="fAmount" placeholder="0"></div>
+      <div class="field"><label>Курс входа</label><input type="number" step="0.01" id="fRateIn" placeholder="0"></div>
+      <div class="field"><label>Курс выхода</label><input type="number" step="0.01" id="fRateOut" placeholder="0"></div>
+      <div class="field" style="display:flex; align-items:flex-end;"><button class="btn" style="width:100%" id="addBtn">Добавить сделку</button></div>
+    </div>
+    <div class="kickback-row">
+      <label>Кикбек Рауля</label>
+      <input type="number" step="0.01" id="fKickback" value="0.4">
+      <span style="color:var(--text-faint); font-size:12px;">% от суммы входа</span>
+    </div>
+    <div class="preview" id="livePreview" style="display:none;">
+      <div><div class="k">USDT куплено</div><div class="v" id="pUsdt">—</div></div>
+      <div><div class="k">Профит (спред)</div><div class="v mint" id="pProfit">—</div></div>
+      <div><div class="k">Кикбек Рауля</div><div class="v gold" id="pKick">—</div></div>
+      <div><div class="k">Итого к разделу</div><div class="v mint" id="pTotal">—</div></div>
+      <div><div class="k">На человека ×4</div><div class="v" id="pShare">—</div></div>
+    </div>
+  </div>
+  </div>
+
+  <div class="section-head">
+    <h2>Журнал сделок</h2>
+    <button class="btn ghost small" id="resetBtn">Очистить всё</button>
+  </div>
+  <div class="panel" style="padding-bottom:0; margin-bottom:0;">
+    <div class="filter-row">
+      <div class="field" style="flex:1; min-width:140px;">
+        <label>Фильтр по дате</label>
+        <input type="date" id="filterDate">
+      </div>
+      <div class="field" style="flex:1; min-width:140px;">
+        <label>Сортировка</label>
+        <select id="sortOrder">
+          <option value="desc">Сначала новые</option>
+          <option value="asc">Сначала старые</option>
+        </select>
+      </div>
+      <button class="btn ghost small" id="clearFilterBtn" style="align-self:flex-end; margin-bottom:1px;">Сбросить</button>
+    </div>
+  </div>
+  <div class="panel" style="padding:0; margin-top:10px;">
+    <div class="deals-head">
+      <span>Дата</span><span>Вход</span><span>Выход</span><span style="text-align:right">Профит общий</span><span style="text-align:right">%</span><span></span>
+    </div>
+    <div id="dealsList"></div>
+  </div>
+
+  <div class="section-head"><h2 id="statsLabel">Статистика месяца</h2></div>
+  <div class="stats-grid">
+    <div class="stat-card"><div class="k">Сумма профита</div><div class="v mint" id="sSum">0 ₽</div></div>
+    <div class="stat-card"><div class="k">Средний % профита</div><div class="v" id="sAvg">0.00%</div></div>
+    <div class="stat-card"><div class="k">Сделок</div><div class="v" id="sCount">0</div></div>
+  </div>
+
+  <footer>Данные хранятся локально в этом артефакте · только вы видите их</footer>
+</div>
+
+<script>
+const PEOPLE = ['Кирилл','Камран','Федя','Рауль'];
+const money = n => (Math.round(n*100)/100).toLocaleString('ru-RU', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' ₽';
+const pct = n => (n*100).toLocaleString('ru-RU', {minimumFractionDigits:2, maximumFractionDigits:2}) + '%';
+const fmtDate = d => new Date(d+'T00:00:00').toLocaleDateString('ru-RU');
+const monthKey = d => d.slice(0,7);
+
+// !!! ВСТАВЬТЕ СЮДА ССЫЛКУ НА ВАШ СЕРВЕР ПОСЛЕ ДЕПЛОЯ НА RENDER, например:
+// const API_BASE = 'https://spred-tracker-server.onrender.com';
+const API_BASE = 'https://spred-tracker-server.onrender.com';
+
+let deals = [];
+let filterDate = '';
+let sortOrder = 'desc';
+let tg = null;
+let inTelegram = false;
+let accessCode = null;
+let userRole = null; // 'admin' | 'viewer'
+
+function initTelegram(){
+  if(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initData){
+    tg = window.Telegram.WebApp;
+    inTelegram = true;
+    tg.ready();
+    tg.expand();
+    try{ tg.setHeaderColor('#0A0D12'); tg.setBackgroundColor('#0A0D12'); }catch(e){}
+  } else {
+    document.getElementById('envBanner').style.display = 'block';
+  }
+}
+
+function setSync(state){
+  let dot = document.getElementById('syncDot');
+  if(!dot){
+    dot = document.createElement('span');
+    dot.id = 'syncDot';
+    dot.className = 'sync-dot';
+    document.querySelector('.hero h1').appendChild(dot);
+  }
+  dot.className = 'sync-dot' + (state==='ok' ? ' ok' : state==='err' ? ' err' : '');
+}
+
+// ---- Сохранение кода доступа между сессиями (через Telegram CloudStorage, либо только на время сессии) ----
+function storedCodeGet(){
+  return new Promise((resolve)=>{
+    if(inTelegram){
+      tg.CloudStorage.getItem('access_code', (err, val)=> resolve(err ? null : val));
+    } else {
+      resolve(null); // вне Telegram код не запоминается между открытиями — это нормально
+    }
+  });
+}
+function storedCodeSet(code){
+  if(inTelegram){
+    tg.CloudStorage.setItem('access_code', code, ()=>{});
+  }
+}
+
+async function apiRequest(path, options={}){
+  const res = await fetch(API_BASE + path, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      'x-access-code': accessCode,
+      ...(options.headers||{})
+    }
+  });
+  if(res.status === 401){ throw new Error('unauthorized'); }
+  if(!res.ok){ throw new Error('request failed: ' + res.status); }
+  return res.status === 204 ? null : res.json();
+}
+
+async function loadDeals(){
+  setSync('idle');
+  try{
+    const rows = await apiRequest('/api/deals');
+    deals = rows.map(r=>({
+      id:r.id, date:r.date, amount:r.amount, rateIn:r.rateIn,
+      rateOut:r.rateOut, kickbackPct:r.kickbackPct
+    }));
+    setSync('ok');
+  }catch(e){
+    setSync('err');
+    if(e.message === 'unauthorized'){ showLogin('Код неверный, попробуйте снова'); return; }
+    console.error('load error', e);
+  }
+  render();
+}
+
+async function saveDeal(deal){
+  setSync('idle');
+  try{
+    await apiRequest('/api/deals', {
+      method:'POST',
+      body: JSON.stringify({
+        ...deal,
+        createdBy: (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) ? tg.initDataUnsafe.user.first_name : 'unknown'
+      })
+    });
+    setSync('ok');
+  }catch(e){
+    setSync('err');
+    console.error('save error', e);
+  }
+}
+
+async function removeDeal(id){
+  try{ await apiRequest('/api/deals/'+id, {method:'DELETE'}); }
+  catch(e){ console.error('remove error', e); }
+}
+
+function showLogin(errMsg){
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('mainApp').style.display = 'none';
+  document.getElementById('codeErr').textContent = errMsg || '';
+  document.getElementById('codeInput').value = '';
+  document.getElementById('codeInput').focus();
+}
+
+function showApp(){
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('mainApp').style.display = 'block';
+  applyRoleUI();
+}
+
+function applyRoleUI(){
+  const isAdmin = userRole === 'admin';
+  const addPanel = document.getElementById('addDealPanel');
+  const resetBtn = document.getElementById('resetBtn');
+  if(addPanel) addPanel.style.display = isAdmin ? 'block' : 'none';
+  if(resetBtn) resetBtn.style.display = isAdmin ? 'inline-block' : 'none';
+  const roleBadge = document.getElementById('roleBadge');
+  if(roleBadge) roleBadge.textContent = isAdmin ? 'Владелец · полный доступ' : 'Просмотр · только чтение';
+}
+
+async function tryCode(code){
+  accessCode = code;
+  try{
+    const res = await fetch(API_BASE + '/api/auth', { headers:{'x-access-code':code} });
+    if(res.status === 401){
+      showLogin('Неверный код, попробуйте ещё раз');
+      return;
+    }
+    if(!res.ok){
+      showLogin('Сервер недоступен, проверьте подключение');
+      return;
+    }
+    const data = await res.json();
+    userRole = data.role;
+    storedCodeSet(code);
+    showApp();
+    await loadDeals();
+  }catch(e){
+    showLogin('Не удалось связаться с сервером');
+  }
+}
+
+document.getElementById('codeSubmit').addEventListener('click', ()=>{
+  const val = document.getElementById('codeInput').value.trim();
+  if(!val){ document.getElementById('codeErr').textContent = 'Введите код'; return; }
+  tryCode(val);
+});
+document.getElementById('codeInput').addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter') document.getElementById('codeSubmit').click();
+});
+
+function computeDeal(d){
+  const usdt = d.amount / d.rateIn;
+  const amountOut = usdt * d.rateOut;
+  const profit = amountOut - d.amount;
+  const profitPct = profit / d.amount;
+  const kickback = d.amount * (d.kickbackPct/100);
+  const totalToShare = profit + kickback;
+  const perPerson = totalToShare / 4;
+  const totalPct = totalToShare / d.amount;
+  return {usdt, amountOut, profit, profitPct, kickback, totalToShare, perPerson, totalPct};
+}
+
+function buildMonthOptions(){
+  const picker = document.getElementById('monthPicker');
+  const months = Array.from(new Set(deals.map(d=>monthKey(d.date)))).sort().reverse();
+  const now = new Date();
+  const currentKey = now.toISOString().slice(0,7);
+  if(!months.includes(currentKey)) months.unshift(currentKey);
+  picker.innerHTML = months.map(m=>{
+    const [y,mo] = m.split('-');
+    const label = new Date(y, mo-1, 1).toLocaleDateString('ru-RU', {month:'long', year:'numeric'});
+    return `<option value="${m}">${label}</option>`;
+  }).join('');
+  picker.value = currentKey;
+}
+
+function render(){
+  buildMonthOptions();
+  renderTicker();
+  renderDealsList();
+  renderMonthStats();
+}
+
+function renderTicker(){
+  const el = document.getElementById('tickerContent');
+  if(deals.length===0){ el.textContent = 'нет сделок — добавьте первую'; return; }
+  const last = deals[deals.length-1];
+  const c = computeDeal(last);
+  el.innerHTML = `<span class="val">${last.rateIn.toFixed(2)}</span> → <span class="val">${last.rateOut.toFixed(2)}</span>
+    &nbsp;·&nbsp; спред <span class="up">${pct(c.totalPct)}</span>
+    &nbsp;·&nbsp; последняя сделка ${fmtDate(last.date)}`;
+}
+
+function renderDealsList(){
+  const list = document.getElementById('dealsList');
+  let filtered = filterDate ? deals.filter(d=>d.date===filterDate) : [...deals];
+  if(filtered.length===0){
+    list.innerHTML = `<div class="empty">${filterDate ? 'На эту дату сделок нет.' : 'Пока пусто. Добавьте первую сделку выше.'}</div>`;
+    return;
+  }
+  const sorted = filtered.sort((a,b)=> sortOrder==='desc' ? b.date.localeCompare(a.date) : a.date.localeCompare(b.date));
+  list.innerHTML = sorted.map(d=>{
+    const c = computeDeal(d);
+    const width = Math.min(100, Math.max(6, c.totalPct*100*30));
+    return `<div class="deal-row">
+      <span class="date">${fmtDate(d.date)}</span>
+      <span class="rate rate-in">${money(d.amount)} <br><b>${d.rateIn.toFixed(2)}</b> ₽/USDT</span>
+      <span class="rate rate-out">${c.usdt.toLocaleString('ru-RU',{maximumFractionDigits:2})} USDT<br><b>${d.rateOut.toFixed(2)}</b> ₽/USDT
+        <div class="spread-bar"><div class="spread-fill" style="width:${width}%"></div></div>
+      </span>
+      <span class="profit">${money(c.totalToShare)}</span>
+      <span class="pct">${pct(c.totalPct)}</span>
+      ${userRole==='admin' ? `<button class="del" data-id="${d.id}" title="Удалить">×</button>` : `<span></span>`}
+    </div>`;
+  }).join('');
+  list.querySelectorAll('.del').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      if(tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+      const id = btn.dataset.id;
+      deals = deals.filter(d=>d.id !== id);
+      render();
+      await removeDeal(id);
+    });
+  });
+}
+
+function renderMonthStats(){
+  const picker = document.getElementById('monthPicker');
+  const key = picker.value;
+  const monthDeals = deals.filter(d=>monthKey(d.date)===key);
+  const computed = monthDeals.map(computeDeal);
+
+  const sumProfit = computed.reduce((s,c)=>s+c.totalToShare,0);
+  const avgPct = computed.length ? computed.reduce((s,c)=>s+c.totalPct,0)/computed.length : 0;
+  const count = monthDeals.length;
+
+  document.getElementById('heroTotal').innerHTML = `${money(sumProfit)}<span>${pct(avgPct)}</span>`;
+  document.getElementById('heroSub').textContent = `${count} ${dealsWord(count)}`;
+  document.getElementById('sSum').textContent = money(sumProfit);
+  document.getElementById('sAvg').textContent = pct(avgPct);
+  document.getElementById('sCount').textContent = count;
+
+  const perPerson = count ? sumProfit/4 : 0;
+  const peopleStrip = document.getElementById('peopleStrip');
+  peopleStrip.innerHTML = PEOPLE.map(name=>{
+    const isR = name==='Рауль';
+    return `<div class="person-card ${isR?'rauль':''}">
+      <div class="name">${name}</div>
+      <div class="amount">${money(perPerson)}</div>
+      ${isR ? '<div class="tag">+ кикбек включён</div>' : ''}
+    </div>`;
+  }).join('');
+}
+
+function dealsWord(n){
+  const mod10 = n%10, mod100 = n%100;
+  if(mod10===1 && mod100!==11) return 'сделка';
+  if([2,3,4].includes(mod10) && ![12,13,14].includes(mod100)) return 'сделки';
+  return 'сделок';
+}
+
+function updatePreview(){
+  const amount = parseFloat(document.getElementById('fAmount').value);
+  const rateIn = parseFloat(document.getElementById('fRateIn').value);
+  const rateOut = parseFloat(document.getElementById('fRateOut').value);
+  const kickbackPct = parseFloat(document.getElementById('fKickback').value) || 0;
+  const preview = document.getElementById('livePreview');
+  if(!amount || !rateIn || !rateOut){ preview.style.display='none'; return; }
+  const c = computeDeal({amount, rateIn, rateOut, kickbackPct});
+  preview.style.display='flex';
+  document.getElementById('pUsdt').textContent = c.usdt.toLocaleString('ru-RU',{maximumFractionDigits:2}) + ' USDT';
+  document.getElementById('pProfit').textContent = money(c.profit) + '  (' + pct(c.profitPct) + ')';
+  document.getElementById('pKick').textContent = money(c.kickback);
+  document.getElementById('pTotal').textContent = money(c.totalToShare) + '  (' + pct(c.totalPct) + ')';
+  document.getElementById('pShare').textContent = money(c.perPerson);
+}
+
+['fAmount','fRateIn','fRateOut','fKickback'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', updatePreview);
+});
+
+document.getElementById('addBtn').addEventListener('click', async ()=>{
+  const date = document.getElementById('fDate').value || new Date().toISOString().slice(0,10);
+  const amount = parseFloat(document.getElementById('fAmount').value);
+  const rateIn = parseFloat(document.getElementById('fRateIn').value);
+  const rateOut = parseFloat(document.getElementById('fRateOut').value);
+  const kickbackPct = parseFloat(document.getElementById('fKickback').value) || 0;
+  if(!amount || !rateIn || !rateOut){
+    if(tg && tg.showAlert) tg.showAlert('Заполните сумму и курсы входа/выхода');
+    else alert('Заполните сумму и курсы входа/выхода');
+    return;
+  }
+  const deal = {id: Date.now().toString(36)+Math.random().toString(36).slice(2,6), date, amount, rateIn, rateOut, kickbackPct};
+  deals.push(deal);
+  render();
+  if(tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+  await saveDeal(deal);
+  document.getElementById('fAmount').value='';
+  document.getElementById('fRateIn').value='';
+  document.getElementById('fRateOut').value='';
+  document.getElementById('livePreview').style.display='none';
+});
+
+document.getElementById('resetBtn').addEventListener('click', async ()=>{
+  const doReset = async ()=>{
+    const ids = deals.map(d=>d.id);
+    deals = [];
+    render();
+    for(const id of ids){ await removeDeal(id); }
+  };
+  if(tg && tg.showConfirm){
+    tg.showConfirm('Удалить все сделки? Это необратимо.', (confirmed)=>{ if(confirmed) doReset(); });
+  } else if(confirm('Удалить все сделки? Это необратимо.')){
+    doReset();
+  }
+});
+
+document.getElementById('monthPicker').addEventListener('change', renderMonthStats);
+
+document.getElementById('filterDate').addEventListener('change', (e)=>{
+  filterDate = e.target.value;
+  renderDealsList();
+});
+document.getElementById('sortOrder').addEventListener('change', (e)=>{
+  sortOrder = e.target.value;
+  renderDealsList();
+});
+document.getElementById('clearFilterBtn').addEventListener('click', ()=>{
+  filterDate = '';
+  sortOrder = 'desc';
+  document.getElementById('filterDate').value = '';
+  document.getElementById('sortOrder').value = 'desc';
+  renderDealsList();
+});
+
+document.getElementById('fDate').valueAsDate = new Date();
+
+initTelegram();
+(async ()=>{
+  const saved = await storedCodeGet();
+  if(saved){
+    await tryCode(saved);
+  } else {
+    showLogin();
+  }
+})();
+</script>
+</body>
+</html>
