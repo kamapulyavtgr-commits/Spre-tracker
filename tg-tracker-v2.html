@@ -191,6 +191,21 @@
 
   /* ---- Monthly stat cards ---- */
   .stats-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:34px;}
+
+  .turnover-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-bottom:34px;}
+  .turnover-card{
+    background:var(--panel); border:1px solid var(--border-soft);
+    border-radius:12px; padding:18px; position:relative; overflow:hidden;
+  }
+  .turnover-card::before{
+    content:''; position:absolute; top:0; left:0; right:0; height:2px;
+    background:linear-gradient(90deg, var(--text-faint), transparent);
+  }
+  .turnover-card:first-child::before{background:linear-gradient(90deg, var(--gold), transparent);}
+  .turnover-card:last-child::before{background:linear-gradient(90deg, var(--mint), transparent);}
+  .turnover-card .t-head{font-size:11px; color:var(--text-faint); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:10px;}
+  .turnover-card .t-main{font-family:'Space Grotesk', sans-serif; font-size:22px; font-weight:700; color:var(--text); line-height:1.1;}
+  .turnover-card .t-sub{font-family:'JetBrains Mono', monospace; font-size:12px; color:var(--text-dim); margin-top:6px;}
   .stat-card{background:var(--panel); border:1px solid var(--border-soft); border-radius:12px; padding:18px;}
   .stat-card .k{font-size:11px; color:var(--text-faint); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:8px;}
   .stat-card .v{font-family:'Space Grotesk', sans-serif; font-size:24px; font-weight:700; color:var(--text);}
@@ -238,6 +253,9 @@
     .form-grid{grid-template-columns:repeat(2,1fr);}
     .people{grid-template-columns:repeat(2,1fr);}
     .stats-grid{grid-template-columns:1fr;}
+    .turnover-grid{grid-template-columns:repeat(2,1fr); gap:8px;}
+    .turnover-card{padding:14px;}
+    .turnover-card .t-main{font-size:17px;}
 
     .deals-head{display:none;}
     .deal-row{
@@ -359,6 +377,20 @@
     <div class="stat-card"><div class="k">Сумма профита</div><div class="v mint" id="sSum">0 ₽</div></div>
     <div class="stat-card"><div class="k">Средний % профита</div><div class="v" id="sAvg">0.00%</div></div>
     <div class="stat-card"><div class="k">Сделок</div><div class="v" id="sCount">0</div></div>
+  </div>
+
+  <div class="section-head"><h2 id="turnoverLabel">Оборот</h2></div>
+  <div class="turnover-grid">
+    <div class="turnover-card">
+      <div class="t-head">Куплено USDT</div>
+      <div class="t-main" id="tBuyRub">0 ₽</div>
+      <div class="t-sub" id="tBuyUsdt">0 USDT</div>
+    </div>
+    <div class="turnover-card">
+      <div class="t-head">Продано USDT</div>
+      <div class="t-main" id="tSellRub">0 ₽</div>
+      <div class="t-sub" id="tSellUsdt">0 USDT</div>
+    </div>
   </div>
 
   <footer>Данные хранятся локально в этом артефакте · только вы видите их</footer>
@@ -632,6 +664,18 @@ function renderMonthStats(){
   document.getElementById('sSum').textContent = money(sumProfit);
   document.getElementById('sAvg').textContent = pct(avgPct);
   document.getElementById('sCount').textContent = count;
+
+  // ---- Оборот: сколько куплено и продано ----
+  const buyRub  = periodDeals.reduce((s,d)=>s + d.amount, 0);
+  const buyUsdt = computed.reduce((s,c)=>s + c.usdt, 0);
+  const sellRub = computed.reduce((s,c)=>s + c.amountOut, 0);
+  const sellUsdt = buyUsdt; // продаётся тот же объём USDT, что был куплен
+
+  document.getElementById('turnoverLabel').textContent = day ? 'Оборот за день' : 'Оборот за месяц';
+  document.getElementById('tBuyRub').textContent = money(buyRub);
+  document.getElementById('tBuyUsdt').textContent = buyUsdt.toLocaleString('ru-RU',{maximumFractionDigits:2}) + ' USDT';
+  document.getElementById('tSellRub').textContent = money(sellRub);
+  document.getElementById('tSellUsdt').textContent = sellUsdt.toLocaleString('ru-RU',{maximumFractionDigits:2}) + ' USDT';
 
   const perPerson = count ? sumProfit/4 : 0;
   const peopleStrip = document.getElementById('peopleStrip');
