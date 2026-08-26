@@ -184,6 +184,11 @@
     padding:9px 10px; border-radius:7px; outline:none;
   }
 
+  .period-pick{display:flex; flex-direction:column; gap:8px; align-items:flex-end;}
+  .day-pick-row{display:flex; gap:6px; align-items:center;}
+  .day-pick-row .btn{padding:8px 11px; line-height:1;}
+  #dayPicker{min-width:150px;}
+
   /* ---- Monthly stat cards ---- */
   .stats-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:34px;}
   .stat-card{background:var(--panel); border:1px solid var(--border-soft); border-radius:12px; padding:18px;}
@@ -284,7 +289,13 @@
       <div class="big" id="heroTotal">0 ₽<span id="heroPct">0.00%</span></div>
       <div class="sub" id="heroSub">0 сделок</div>
     </div>
-    <select class="month-pick" id="monthPicker"></select>
+    <div class="period-pick">
+      <select class="month-pick" id="monthPicker"></select>
+      <div class="day-pick-row">
+        <input type="date" class="month-pick" id="dayPicker">
+        <button class="btn ghost small" id="clearDayBtn" title="Показать весь месяц">×</button>
+      </div>
+    </div>
   </div>
 
   <div class="people" id="peopleStrip"></div>
@@ -301,7 +312,7 @@
       <div class="field"><label>Курс выхода</label><input type="number" step="0.01" id="fRateOut" placeholder="0"></div>
       <div class="field" style="display:flex; align-items:flex-end;"><button class="btn" style="width:100%" id="addBtn">Добавить сделку</button></div>
     </div>
-    <div class="kickback-row">
+    <div class="kickback-row" id="kickbackRow">
       <label>Кикбек Рауля</label>
       <input type="number" step="0.01" id="fKickback" value="0.4">
       <span style="color:var(--text-faint); font-size:12px;">% от суммы входа</span>
@@ -309,9 +320,9 @@
     <div class="preview" id="livePreview" style="display:none;">
       <div><div class="k">USDT куплено</div><div class="v" id="pUsdt">—</div></div>
       <div><div class="k">Профит (спред)</div><div class="v mint" id="pProfit">—</div></div>
-      <div><div class="k">Кикбек Рауля</div><div class="v gold" id="pKick">—</div></div>
-      <div><div class="k">Итого к разделу</div><div class="v mint" id="pTotal">—</div></div>
-      <div><div class="k">На человека ×4</div><div class="v" id="pShare">—</div></div>
+      <div id="pKickRow"><div class="k">Кикбек Рауля</div><div class="v gold" id="pKick">—</div></div>
+      <div id="pTotalRow"><div class="k">Итого к разделу</div><div class="v mint" id="pTotal">—</div></div>
+      <div id="pShareRow"><div class="k">На человека ×4</div><div class="v" id="pShare">—</div></div>
     </div>
   </div>
   </div>
@@ -371,6 +382,7 @@ let tg = null;
 let inTelegram = false;
 let accessCode = null;
 let userRole = null; // 'admin' | 'viewer'
+let userId = null;   // Telegram user id — нужен для личного режима
 
 function initTelegram(){
   if(window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initData){
@@ -378,6 +390,9 @@ function initTelegram(){
     inTelegram = true;
     tg.ready();
     tg.expand();
+    if(tg.initDataUnsafe && tg.initDataUnsafe.user){
+      userId = String(tg.initDataUnsafe.user.id);
+    }
     try{ tg.setHeaderColor('#0A0D12'); tg.setBackgroundColor('#0A0D12'); }catch(e){}
   } else {
     document.getElementById('envBanner').style.display = 'block';
@@ -417,6 +432,7 @@ async function apiRequest(path, options={}){
     headers: {
       'Content-Type': 'application/json',
       'x-access-code': accessCode,
+      'x-user-id': userId || '',
       ...(options.headers||{})
     }
   });
@@ -596,14 +612,20 @@ function renderDealsList(){
 }
 
 function renderMonthStats(){
-  const picker = document.getElementById('monthPicker');
-  const key = picker.value;
-  const monthDeals = deals.filter(d=>monthKey(d.date)===key);
-  const computed = monthDeals.map(computeDeal);
+  const key = document.getElementById('monthPicker').value;
+  const day = document.getElementById('dayPicker').value;
+
+  const periodDeals = day
+    ? deals.filter(d=>d.date===day)
+    : deals.filter(d=>monthKey(d.date)===key);
+  const computed = periodDeals.map(computeDeal);
 
   const sumProfit = computed.reduce((s,c)=>s+c.totalToShare,0);
   const avgPct = computed.length ? computed.reduce((s,c)=>s+c.totalPct,0)/computed.length : 0;
-  const count = monthDeals.length;
+  const count = periodDeals.length;
+
+  document.getElementById('monthLabel').textContent = day ? 'Профит за ' + fmtDate(day) : 'Профит за месяц';
+  document.getElementById('statsLabel').textContent = day ? 'Статистика за день' : 'Статистика месяца';
 
   document.getElementById('heroTotal').innerHTML = `${money(sumProfit)}<span>${pct(avgPct)}</span>`;
   document.getElementById('heroSub').textContent = `${count} ${dealsWord(count)}`;
@@ -686,7 +708,17 @@ document.getElementById('resetBtn').addEventListener('click', async ()=>{
   }
 });
 
-document.getElementById('monthPicker').addEventListener('change', renderMonthStats);
+document.getElementById('monthPicker').addEventListener('change', ()=>{
+  document.getElementById('dayPicker').value = '';
+  renderMonthStats();
+});
+
+document.getElementById('dayPicker').addEventListener('change', renderMonthStats);
+
+document.getElementById('clearDayBtn').addEventListener('click', ()=>{
+  document.getElementById('dayPicker').value = '';
+  renderMonthStats();
+});
 
 document.getElementById('filterDate').addEventListener('change', (e)=>{
   filterDate = e.target.value;
@@ -703,6 +735,46 @@ document.getElementById('clearFilterBtn').addEventListener('click', ()=>{
   document.getElementById('sortOrder').value = 'desc';
   renderDealsList();
 });
+
+// ---- Снятие фокуса с полей ввода (закрытие клавиатуры) ----
+// В Telegram WebView тап по пустому месту сам по себе не убирает клавиатуру,
+// поэтому снимаем фокус вручную.
+document.addEventListener('pointerdown', (e)=>{
+  const active = document.activeElement;
+  if(!active) return;
+  const isField = active.tagName === 'INPUT' || active.tagName === 'SELECT' || active.tagName === 'TEXTAREA';
+  if(!isField) return;
+  // если тапнули по самому полю или по кнопке — не мешаем
+  if(e.target === active) return;
+  if(e.target.closest('input, select, textarea, button, label')) return;
+  active.blur();
+}, true);
+
+// Enter / Готово на клавиатуре — закрыть её
+document.querySelectorAll('input').forEach(inp=>{
+  inp.addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter'){
+      e.preventDefault();
+      inp.blur();
+    }
+  });
+});
+
+// Свайп/скролл страницы тоже убирает клавиатуру
+let touchStartY = null;
+document.addEventListener('touchstart', (e)=>{
+  touchStartY = e.touches[0].clientY;
+}, {passive:true});
+document.addEventListener('touchmove', (e)=>{
+  if(touchStartY === null) return;
+  if(Math.abs(e.touches[0].clientY - touchStartY) > 30){
+    const active = document.activeElement;
+    if(active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')){
+      active.blur();
+    }
+    touchStartY = null;
+  }
+}, {passive:true});
 
 document.getElementById('fDate').valueAsDate = new Date();
 
